@@ -21,7 +21,7 @@ st.set_page_config(page_title="Ledger · AI Data Analyst", page_icon="📈", lay
 CHART_DIR = Path("charts")
 CHART_DIR.mkdir(exist_ok=True)
 
-MODELS = ["llama-3.3-70b-versatile", "qwen/qwen3-32b", "openai/gpt-oss-20b"]
+MODELS = ["qwen/qwen3.8-27b", "llama-3.3-70b-versatile", "openai/gpt-oss-20b"]
 
 SUGGESTIONS = [
     ("Top performers", "Which region generated the highest revenue?"),
@@ -33,75 +33,162 @@ SUGGESTIONS = [
 ]
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Styling
+# Styling  (every widget gets an explicit background AND text colour)
 # ──────────────────────────────────────────────────────────────────────────────
 INK, BLUE, SIGNAL, PAPER, LINE = "#14213D", "#3256D6", "#E8A317", "#F2F5F9", "#DDE3EC"
+MUTED, SOFT_BLUE = "#5B6785", "#EAF0FF"
+SIDE_TEXT = "#E8ECF5"
 
 st.markdown(
     f"""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
 
-html, body, [class*="css"], .stApp {{ font-family: 'Plus Jakarta Sans', sans-serif; color: {INK}; }}
+/* ---------- Base ---------- */
+html, body, .stApp {{ font-family: 'Plus Jakarta Sans', sans-serif; }}
 .stApp {{ background: {PAPER}; }}
-#MainMenu, footer {{ visibility: hidden; }}
-.block-container {{ padding-top: 1.6rem; max-width: 1180px; }}
+#MainMenu, footer, header[data-testid="stHeader"] {{ visibility: hidden; height: 0; }}
+.block-container {{ padding-top: 1.4rem; max-width: 1180px; }}
 code, pre {{ font-family: 'JetBrains Mono', monospace !important; }}
 
-/* Sidebar */
-[data-testid="stSidebar"] {{ background: {INK}; }}
-[data-testid="stSidebar"] * {{ color: #E8ECF5; }}
-[data-testid="stSidebar"] input {{ color: {INK} !important; }}
-[data-testid="stSidebar"] [data-testid="stFileUploader"] section {{
-    background: rgba(255,255,255,.06); border: 1px dashed rgba(255,255,255,.3); border-radius: 12px;
-}}
-[data-testid="stSidebar"] [data-testid="stFileUploader"] section * {{ color: #E8ECF5 !important; }}
-[data-testid="stSidebar"] button {{ color: {INK} !important; }}
-.brand {{ font-size: 1.5rem; font-weight: 800; letter-spacing: -.02em; }}
-.brand-sub {{ font-size: .85rem; opacity: .7; margin-bottom: 1.2rem; }}
+/* Main-area text is always dark ink */
+.stApp [data-testid="stMain"] h1, .stApp [data-testid="stMain"] h2, .stApp [data-testid="stMain"] h3,
+.stApp [data-testid="stMain"] h4, .stApp [data-testid="stMain"] h5, .stApp [data-testid="stMain"] p,
+.stApp [data-testid="stMain"] label, .stApp [data-testid="stMain"] li,
+.stApp [data-testid="stMain"] span {{ color: {INK}; }}
 
-/* Hero */
-.hero {{
-    background: {INK}; color: #fff; border-radius: 18px; padding: 1.8rem 2rem; margin-bottom: 1.2rem;
+/* ---------- Sidebar: dark panel, light labels, WHITE inputs with DARK text ---------- */
+[data-testid="stSidebar"] {{ background: {INK}; }}
+[data-testid="stSidebar"] label, [data-testid="stSidebar"] p, [data-testid="stSidebar"] small,
+[data-testid="stSidebar"] [data-testid="stCaptionContainer"],
+[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] {{ color: {SIDE_TEXT}; }}
+
+[data-testid="stSidebar"] [data-baseweb="input"],
+[data-testid="stSidebar"] [data-baseweb="select"] > div {{
+    background: #fff !important; border: 1px solid {LINE} !important; border-radius: 10px !important;
+}}
+[data-testid="stSidebar"] [data-baseweb="input"] input,
+[data-testid="stSidebar"] [data-baseweb="select"] *,
+[data-testid="stSidebar"] [data-baseweb="input"] svg,
+[data-testid="stSidebar"] [data-baseweb="select"] svg {{ color: {INK} !important; fill: {INK} !important; }}
+[data-testid="stSidebar"] input::placeholder {{ color: #8A94AD !important; }}
+
+/* Sidebar uploader: dashed light drop zone, white Browse button with dark text */
+[data-testid="stSidebar"] [data-testid="stFileUploader"] section {{
+    background: rgba(255,255,255,.08); border: 1.5px dashed rgba(255,255,255,.45); border-radius: 12px;
+}}
+[data-testid="stSidebar"] [data-testid="stFileUploader"] section small,
+[data-testid="stSidebar"] [data-testid="stFileUploader"] section span,
+[data-testid="stSidebar"] [data-testid="stFileUploaderFile"] * {{ color: {SIDE_TEXT} !important; }}
+[data-testid="stSidebar"] [data-testid="stFileUploader"] button,
+[data-testid="stSidebar"] [data-testid="stFileUploader"] button * {{ background: #fff; color: {INK} !important; }}
+[data-testid="stSidebar"] [data-testid="stFileUploaderFile"] button,
+[data-testid="stSidebar"] [data-testid="stFileUploaderFile"] button * {{ background: transparent; color: {SIDE_TEXT} !important; }}
+
+/* Sidebar buttons: solid white with dark text, blue on hover */
+[data-testid="stSidebar"] .stButton > button, [data-testid="stSidebar"] .stDownloadButton > button {{
+    background: #fff !important; border: 1px solid #fff !important;
+}}
+[data-testid="stSidebar"] .stButton > button *, [data-testid="stSidebar"] .stDownloadButton > button * {{
+    color: {INK} !important; font-weight: 700;
+}}
+[data-testid="stSidebar"] .stButton > button:hover, [data-testid="stSidebar"] .stDownloadButton > button:hover {{
+    background: {SOFT_BLUE} !important; border-color: {SIGNAL} !important;
+}}
+[data-testid="stSidebar"] [data-testid="stAlert"] * {{ color: {INK} !important; }}
+
+.brand {{ font-size: 1.6rem; font-weight: 800; letter-spacing: -.02em; color: #fff; }}
+.brand-sub {{ font-size: .85rem; color: {SIDE_TEXT}; opacity: .75; margin-bottom: 1.2rem; }}
+
+/* ---------- Hero ---------- */
+.stApp .hero {{
+    background: {INK}; border-radius: 18px; padding: 1.8rem 2rem; margin-bottom: 1.2rem;
     border-left: 8px solid {SIGNAL};
 }}
-.hero h1 {{ font-size: 2rem; font-weight: 800; letter-spacing: -.03em; margin: 0 0 .4rem 0; color: #fff; }}
-.hero p {{ margin: 0; opacity: .8; font-size: 1rem; max-width: 640px; line-height: 1.55; }}
+.stApp .hero h1 {{ font-size: 2rem; font-weight: 800; letter-spacing: -.03em; margin: 0 0 .4rem 0; color: #fff !important; }}
+.stApp .hero p {{ margin: 0; font-size: 1rem; max-width: 640px; line-height: 1.55; color: #DCE3F2 !important; }}
 
-/* Stat tiles */
+/* ---------- Stat tiles ---------- */
 [data-testid="stMetric"] {{
     background: #fff; border: 1px solid {LINE}; border-radius: 12px; padding: .9rem 1.1rem;
 }}
-[data-testid="stMetricLabel"] p {{ font-size: .82rem; color: #5B6785; }}
-[data-testid="stMetricValue"] {{ font-weight: 800; letter-spacing: -.02em; }}
+[data-testid="stMetricLabel"], [data-testid="stMetricLabel"] * {{ color: {MUTED} !important; font-size: .82rem; }}
+[data-testid="stMetricValue"], [data-testid="stMetricValue"] * {{ color: {INK} !important; font-weight: 800; letter-spacing: -.02em; }}
 
-/* Nav */
-div[role="radiogroup"] {{ gap: .4rem; flex-wrap: wrap; }}
+/* ---------- Navigation pills ---------- */
+div[role="radiogroup"] {{ gap: .5rem; flex-wrap: wrap; }}
 div[role="radiogroup"] > label {{
-    background: #fff; border: 1px solid {LINE}; border-radius: 999px; padding: .35rem 1rem; cursor: pointer;
+    background: #fff; border: 1.5px solid {LINE}; border-radius: 999px; padding: .4rem 1.1rem; cursor: pointer;
 }}
-div[role="radiogroup"] > label:has(input:checked) {{ background: {BLUE}; border-color: {BLUE}; }}
-div[role="radiogroup"] > label:has(input:checked) * {{ color: #fff !important; }}
+div[role="radiogroup"] > label:hover {{ border-color: {BLUE}; }}
 div[role="radiogroup"] > label > div:first-child {{ display: none; }}
+div[role="radiogroup"] > label p {{ color: {INK} !important; font-weight: 600; }}
+div[role="radiogroup"] > label:has(input:checked) {{ background: {BLUE}; border-color: {BLUE}; }}
+div[role="radiogroup"] > label:has(input:checked) p {{ color: #fff !important; }}
 
-/* Chat */
+/* ---------- Main-area inputs: white box, dark text, visible border ---------- */
+[data-testid="stMain"] [data-baseweb="select"] > div,
+[data-testid="stMain"] [data-baseweb="input"] {{
+    background: #fff !important; border: 1.5px solid {LINE} !important; border-radius: 10px !important;
+}}
+[data-testid="stMain"] [data-baseweb="select"] *, [data-testid="stMain"] [data-baseweb="input"] input {{
+    color: {INK} !important;
+}}
+[data-testid="stMain"] [data-baseweb="select"] svg {{ fill: {INK} !important; }}
+
+/* Dropdown menus (rendered in a popover outside the main tree) */
+[data-baseweb="popover"] ul, [data-baseweb="popover"] li, [data-baseweb="menu"] {{
+    background: #fff !important; color: {INK} !important;
+}}
+[data-baseweb="popover"] li * {{ color: {INK} !important; }}
+[data-baseweb="popover"] li:hover, [data-baseweb="popover"] li[aria-selected="true"] {{ background: {SOFT_BLUE} !important; }}
+
+/* Slider */
+[data-testid="stSlider"] * {{ color: {INK} !important; }}
+
+/* ---------- Buttons (main area) ---------- */
+[data-testid="stMain"] .stButton > button {{
+    background: #fff; border: 1.5px solid {LINE}; border-radius: 12px; padding: .7rem 1rem;
+    min-height: 3.2rem; text-align: left;
+}}
+[data-testid="stMain"] .stButton > button * {{ color: {INK} !important; font-weight: 600; }}
+[data-testid="stMain"] .stButton > button:hover {{ border-color: {BLUE}; background: {SOFT_BLUE}; }}
+[data-testid="stMain"] .stButton > button:hover * {{ color: {BLUE} !important; }}
+.stButton > button:focus-visible {{ outline: 3px solid {BLUE}; outline-offset: 2px; }}
+
+/* ---------- Chat ---------- */
 [data-testid="stChatMessage"] {{
     background: #fff; border: 1px solid {LINE}; border-radius: 14px; padding: 1rem 1.2rem;
 }}
-[data-testid="stChatInput"] textarea {{ font-family: 'Plus Jakarta Sans', sans-serif; }}
-
-/* Buttons */
-.stButton > button, .stDownloadButton > button {{
-    border-radius: 10px; font-weight: 600; border: 1px solid {LINE}; background: #fff; color: {INK};
+[data-testid="stChatMessage"] * {{ color: {INK}; }}
+[data-testid="stBottom"], [data-testid="stBottom"] > div {{ background: {PAPER} !important; }}
+[data-testid="stChatInput"] {{
+    background: #fff !important; border: 2px solid {BLUE} !important; border-radius: 14px !important;
 }}
-.stButton > button:hover {{ border-color: {BLUE}; color: {BLUE}; }}
-.stButton > button:focus-visible {{ outline: 3px solid {BLUE}; outline-offset: 2px; }}
-
-.empty {{
-    background: #fff; border: 1px dashed {LINE}; border-radius: 16px; padding: 2.2rem; text-align: center;
+[data-testid="stChatInput"] textarea {{
+    font-family: 'Plus Jakarta Sans', sans-serif; background: #fff !important; color: {INK} !important;
+    -webkit-text-fill-color: {INK} !important;
 }}
-.empty h3 {{ margin: 0 0 .4rem 0; }}
-.flag {{ border-left: 4px solid {SIGNAL}; background: #FFF7E6; padding: .7rem 1rem; border-radius: 8px; }}
+[data-testid="stChatInput"] textarea::placeholder {{ color: #6B7794 !important; -webkit-text-fill-color: #6B7794 !important; }}
+[data-testid="stChatInput"] button {{ background: {BLUE} !important; border-radius: 10px !important; }}
+[data-testid="stChatInput"] button svg {{ fill: #fff !important; color: #fff !important; }}
+
+/* ---------- Expander + code ---------- */
+[data-testid="stExpander"] {{ background: #fff; border: 1.5px solid {LINE}; border-radius: 12px; }}
+[data-testid="stExpander"] summary, [data-testid="stExpander"] summary * {{ color: {INK} !important; font-weight: 600; }}
+[data-testid="stCode"], [data-testid="stCode"] pre {{ background: #F6F8FB !important; border-radius: 10px; }}
+[data-testid="stCode"] code {{ color: {INK}; }}
+
+/* ---------- Alerts, spinner, tables ---------- */
+[data-testid="stAlert"] * {{ color: {INK} !important; }}
+[data-testid="stSpinner"] * {{ color: {INK} !important; }}
+[data-testid="stDataFrame"] {{ background: #fff; border: 1px solid {LINE}; border-radius: 12px; }}
+
+/* ---------- Custom blocks ---------- */
+.empty {{ background: #fff; border: 2px dashed {LINE}; border-radius: 16px; padding: 2.2rem; text-align: center; color: {INK}; }}
+.empty h3 {{ margin: 0 0 .4rem 0; color: {INK}; }}
+.flag {{ border-left: 5px solid {SIGNAL}; background: #FFF7E6; padding: .8rem 1rem; border-radius: 8px; color: {INK}; margin-bottom: 1rem; }}
+.hint {{ background: {SOFT_BLUE}; border: 1px solid #C9D6FF; color: {INK}; padding: .6rem .9rem; border-radius: 10px; font-size: .92rem; margin-bottom: .8rem; }}
 </style>
 """,
     unsafe_allow_html=True,
@@ -116,8 +203,19 @@ st.session_state.setdefault("pending", None)
 
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Data helpers
+# Helpers
 # ──────────────────────────────────────────────────────────────────────────────
+def style_fig(fig, height=420):
+    """Consistent, readable chart styling."""
+    fig.update_layout(
+        paper_bgcolor="#fff", plot_bgcolor="#fff", font_family="Plus Jakarta Sans", font_color=INK,
+        margin=dict(l=20, r=20, t=30, b=20), height=height, legend_title_text="",
+    )
+    fig.update_xaxes(gridcolor="#EEF1F6", linecolor=LINE)
+    fig.update_yaxes(gridcolor="#EEF1F6", linecolor=LINE)
+    return fig
+
+
 def load_csv(file) -> pd.DataFrame:
     """Read and validate an uploaded CSV."""
     df = pd.read_csv(file)
@@ -185,22 +283,21 @@ def run_agent(question: str, api_key: str, model: str):
     from langchain.agents.agent_types import AgentType
 
     dfs = list(st.session_state.datasets.values())
-    llm = ChatGroq(temperature=0, model_name=model, groq_api_key=api_key, max_tokens=1200)
-    
-    # Switch to ZERO_SHOT_REACT_DESCRIPTION for better compatibility across various LLMs
+    llm = ChatGroq(temperature=0, model_name=model, groq_api_key=api_key, max_tokens=900)
+    # ZERO_SHOT_REACT_DESCRIPTION is compatible with a wide range of LLMs
     agent = create_pandas_dataframe_agent(
-        llm, 
-        dfs if len(dfs) > 1 else dfs[0], 
-        verbose=False, 
+        llm,
+        dfs if len(dfs) > 1 else dfs[0],
+        verbose=False,
         agent_type=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
-        allow_dangerous_code=True, 
-        return_intermediate_steps=True, 
+        allow_dangerous_code=True,
+        return_intermediate_steps=True,
         handle_parsing_errors=True,
     )
-    
+
     chart_path = CHART_DIR / f"{uuid.uuid4().hex}.png"
     history = "\n".join(f"{m['role']}: {m['content'][:400]}" for m in st.session_state.messages[-7:-1])
-    
+
     prompt = f"""You are an expert data analyst. Be concise and business-focused.
 Conversation so far: {history or '(none)'}
 Current question: "{question}"
@@ -219,8 +316,9 @@ Rules:
     for step in result.get("intermediate_steps", []):
         tool_input = getattr(step[0], "tool_input", "")
         code.append(tool_input.get("query", str(tool_input)) if isinstance(tool_input, dict) else str(tool_input))
-        
+
     return result["output"], (str(chart_path) if chart_path.exists() else None), code
+
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Sidebar
@@ -282,7 +380,7 @@ datasets = st.session_state.datasets
 if not datasets:
     st.markdown(
         """<div class="empty"><h3>Start with a CSV</h3>
-        Drop one or more files in the sidebar, or load the sample sales data to see how it works.</div>""",
+        Drop one or more files in the sidebar, or click <b>Try the sample sales data</b> to see how it works.</div>""",
         unsafe_allow_html=True,
     )
     st.stop()
@@ -298,8 +396,10 @@ c2.metric("Rows", f"{len(df):,}")
 c3.metric("Columns", df.shape[1])
 c4.metric("Data quality", f"{q['score']}/100")
 
+st.write("")
 page = st.radio("View", ["Ask", "Explore", "Charts", "Anomalies", "Data quality"],
                 horizontal=True, label_visibility="collapsed")
+st.write("")
 numeric_cols = df.select_dtypes("number").columns.tolist()
 all_cols = df.columns.tolist()
 
@@ -307,6 +407,11 @@ all_cols = df.columns.tolist()
 # Ask
 # ──────────────────────────────────────────────────────────────────────────────
 if page == "Ask":
+    if not api_key:
+        st.markdown('<div class="hint">Add your Groq API key in the sidebar to enable questions. '
+                    'The Charts, Anomalies and Data quality views work without it.</div>',
+                    unsafe_allow_html=True)
+
     if not st.session_state.messages:
         st.markdown("##### Try one of these")
         cols = st.columns(3)
@@ -393,10 +498,11 @@ elif page == "Charts":
                 fig = px.line(data.sort_values(x), x=x, y=y, markers=True)
             else:
                 fig = px.pie(data, names=x, values=y)
-        fig.update_traces(marker_color=BLUE) if kind in ("Bar", "Scatter", "Histogram") else None
-        fig.update_layout(paper_bgcolor="#fff", plot_bgcolor="#fff", font_family="Plus Jakarta Sans",
-                          margin=dict(l=20, r=20, t=30, b=20))
-        st.plotly_chart(fig, use_container_width=True)
+        if kind in ("Bar", "Scatter", "Histogram", "Line"):
+            fig.update_traces(marker_color=BLUE)
+            if kind == "Line":
+                fig.update_traces(line_color=BLUE)
+        st.plotly_chart(style_fig(fig), use_container_width=True)
     except Exception as e:
         st.error(f"This combination can't be charted: {e}. Pick a different column or aggregate.")
 
@@ -422,9 +528,7 @@ elif page == "Anomalies":
         fig = px.scatter(plot, x=plot.index, y=col, color="status",
                          color_discrete_map={"Normal": BLUE, "Flagged": SIGNAL},
                          labels={"x": "Row", col: col})
-        fig.update_layout(paper_bgcolor="#fff", plot_bgcolor="#fff", font_family="Plus Jakarta Sans",
-                          margin=dict(l=20, r=20, t=30, b=20))
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(style_fig(fig), use_container_width=True)
         if len(flagged):
             st.dataframe(flagged, use_container_width=True)
 
@@ -442,8 +546,7 @@ else:
         st.success("No missing values found.")
     else:
         st.markdown("##### Missing values by column")
-        fig = px.bar(missing.reset_index(), x="index", y=0, labels={"index": "Column", "0": "Missing"})
+        fig = px.bar(pd.DataFrame({"Column": missing.index, "Missing cells": missing.values}),
+                     x="Column", y="Missing cells")
         fig.update_traces(marker_color=SIGNAL)
-        fig.update_layout(paper_bgcolor="#fff", plot_bgcolor="#fff", font_family="Plus Jakarta Sans",
-                          margin=dict(l=20, r=20, t=10, b=20), yaxis_title="Missing cells")
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(style_fig(fig, height=360), use_container_width=True)
