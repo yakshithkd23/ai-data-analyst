@@ -1,7 +1,7 @@
 streamlit==1.32.2
 pandas==2.2.1
 langchain==0.1.13
-langchain-openai==0.1.1
+langchain-groq
 langchain-experimental==0.0.55
 matplotlib==3.8.3
 seaborn==0.13.2

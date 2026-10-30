@@ -2,7 +2,8 @@ import streamlit as st
 import pandas as pd
 import os
 from langchain_experimental.agents.agent_toolkits import create_pandas_dataframe_agent
-from langchain_openai import ChatOpenAI
+# from langchain_openai import ChatOpenAI
+from langchain_groq import ChatGroq
 from langchain.agents.agent_types import AgentType
 import matplotlib.pyplot as plt
 
@@ -15,13 +16,13 @@ if "messages" not in st.session_state:
 if "dataframes" not in st.session_state:
     st.session_state.dataframes = []
 
-st.title("📊 AI-Powered Data Analyst")
+st.title(" AI-Powered Data Analyst")
 st.markdown("Upload your CSVs and ask questions, generate charts, or detect anomalies.")
 
 # --- SIDEBAR: CONFIG & UPLOAD ---
 with st.sidebar:
     st.header("Configuration")
-    api_key = st.text_input("OpenAI API Key", type="password")
+    api_key = st.text_input("Groq API Key", type="password")
     
     st.header("Data Upload")
     uploaded_files = st.file_uploader("Upload CSV files", type="csv", accept_multiple_files=True)
@@ -45,9 +46,9 @@ def get_agent():
         st.warning("Please upload at least one CSV file.")
         return None
     
-    llm = ChatOpenAI(temperature=0, model="gpt-4o", openai_api_key=api_key)
-    
-    # Create agent handling single or multiple dataframes
+    # llm = ChatOpenAI(temperature=0, model="gpt-4o", openai_api_key=api_key)
+    # Llama 3 70B is an excellent open-source reasoning model available on Groq
+    llm = ChatGroq(temperature=0, model_name="openai/gpt-oss-120b", groq_api_key=api_key)    # Create agent handling single or multiple dataframes
     agent = create_pandas_dataframe_agent(
         llm,
         st.session_state.dataframes if len(st.session_state.dataframes) > 1 else st.session_state.dataframes[0],
