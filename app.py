@@ -39,6 +39,7 @@ with st.sidebar:
 
 # --- AGENT INITIALIZATION ---
 # --- AGENT INITIALIZATION ---
+# --- AGENT INITIALIZATION ---
 def get_agent():
     if not api_key:
         st.warning("Please enter your Groq API key in the sidebar.")
@@ -47,8 +48,8 @@ def get_agent():
         st.warning("Please upload at least one CSV file.")
         return None
     
-    # Qwen 3.8 27B has excellent native tool calling support
-    llm = ChatGroq(temperature=0, model_name="qwen/qwen3.8-27b", groq_api_key=api_key)    
+    # Qwen 3.8 27B has excellent native tool calling support and we cap tokens to avoid rate limits
+    llm = ChatGroq(temperature=0, model_name="qwen/qwen3.8-27b", groq_api_key=api_key, max_tokens=900)
     
     # Create agent handling single or multiple dataframes
     agent = create_pandas_dataframe_agent(
