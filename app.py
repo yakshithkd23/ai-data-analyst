@@ -38,23 +38,25 @@ with st.sidebar:
                 st.error(f"Error loading {file.name}: {e}")
 
 # --- AGENT INITIALIZATION ---
+# --- AGENT INITIALIZATION ---
 def get_agent():
     if not api_key:
-        st.warning("Please enter your OpenAI API key in the sidebar.")
+        st.warning("Please enter your Groq API key in the sidebar.")
         return None
     if not st.session_state.dataframes:
         st.warning("Please upload at least one CSV file.")
         return None
     
-    # llm = ChatOpenAI(temperature=0, model="gpt-4o", openai_api_key=api_key)
-    # Llama 3 70B is an excellent open-source reasoning model available on Groq
-    llm = ChatGroq(temperature=0, model_name="openai/gpt-oss-120b", groq_api_key=api_key)    # Create agent handling single or multiple dataframes
+    # Qwen 3.8 27B has excellent native tool calling support
+    llm = ChatGroq(temperature=0, model_name="qwen/qwen3.8-27b", groq_api_key=api_key)    
+    
+    # Create agent handling single or multiple dataframes
     agent = create_pandas_dataframe_agent(
         llm,
         st.session_state.dataframes if len(st.session_state.dataframes) > 1 else st.session_state.dataframes[0],
         verbose=True,
-        agent_type=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
-        allow_dangerous_code=True, # Required for execution in experimental Pandas agent
+        agent_type=AgentType.OPENAI_FUNCTIONS, # Qwen handles this perfectly!
+        allow_dangerous_code=True,
         handle_parsing_errors=True
     )
     return agent
