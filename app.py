@@ -53,7 +53,7 @@ def get_agent():
         llm,
         st.session_state.dataframes if len(st.session_state.dataframes) > 1 else st.session_state.dataframes[0],
         verbose=True,
-        agent_type=AgentType.OPENAI_FUNCTIONS,
+        agent_type=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
         allow_dangerous_code=True, # Required for execution in experimental Pandas agent
         handle_parsing_errors=True
     )
