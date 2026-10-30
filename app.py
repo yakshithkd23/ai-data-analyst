@@ -186,39 +186,41 @@ def run_agent(question: str, api_key: str, model: str):
 
     dfs = list(st.session_state.datasets.values())
     llm = ChatGroq(temperature=0, model_name=model, groq_api_key=api_key, max_tokens=1200)
+    
+    # Switch to ZERO_SHOT_REACT_DESCRIPTION for better compatibility across various LLMs
     agent = create_pandas_dataframe_agent(
-        llm,
-        dfs if len(dfs) > 1 else dfs[0],
-        verbose=False,
-        agent_type=AgentType.OPENAI_FUNCTIONS,
-        allow_dangerous_code=True,
-        return_intermediate_steps=True,
+        llm, 
+        dfs if len(dfs) > 1 else dfs[0], 
+        verbose=False, 
+        agent_type=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
+        allow_dangerous_code=True, 
+        return_intermediate_steps=True, 
         handle_parsing_errors=True,
     )
-
+    
     chart_path = CHART_DIR / f"{uuid.uuid4().hex}.png"
     history = "\n".join(f"{m['role']}: {m['content'][:400]}" for m in st.session_state.messages[-7:-1])
+    
     prompt = f"""You are an expert data analyst. Be concise and business-focused.
-Conversation so far:
-{history or '(none)'}
-
+Conversation so far: {history or '(none)'}
 Current question: "{question}"
-
 Rules:
 - Start with the direct answer, then a short "Why" explaining your reasoning.
 - If a chart is requested, build it with matplotlib, call plt.savefig(r'{chart_path}', bbox_inches='tight', dpi=150), then describe it.
 - For anomalies, use IQR or Z-score, state the threshold, and list the flagged rows.
 - If SQL is requested, give the SQL query in a ```sql block next to the pandas result.
 """
-    result = agent.invoke({"input": prompt})
+    try:
+        result = agent.invoke({"input": prompt})
+    except Exception as e:
+        return f"Error executing agent: {e}", None, []
 
     code = []
     for step in result.get("intermediate_steps", []):
         tool_input = getattr(step[0], "tool_input", "")
         code.append(tool_input.get("query", str(tool_input)) if isinstance(tool_input, dict) else str(tool_input))
-
+        
     return result["output"], (str(chart_path) if chart_path.exists() else None), code
-
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Sidebar
